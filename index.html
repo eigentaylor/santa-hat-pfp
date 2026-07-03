@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Santa Hat PFP Maker</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>santa hat pfp maker</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="app">
     <header>
-      <h1>🎅 Santa Hat PFP Maker</h1>
-      <p class="subtitle">Upload a photo, drag the hat into place, resize &amp; rotate it, then download.</p>
+      <h1>🎅 santa hat pfp maker</h1>
+      <p class="subtitle">Upload a photo (or paste one from your clipboard), drag the hat into place, resize &amp;
+        rotate it, then download.</p>
     </header>
 
     <div class="toolbar">
@@ -18,6 +21,7 @@
         Upload Photo
         <input type="file" id="photoInput" accept="image/*" hidden>
       </label>
+      <button class="btn" id="pasteBtn">Import from Clipboard</button>
       <button class="btn" id="resetHatBtn" disabled>Reset Hat</button>
       <button class="btn" id="flipHatBtn" disabled>Flip Hat</button>
       <button class="btn btn-primary" id="downloadBtn" disabled>Download</button>
@@ -36,4 +40,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>

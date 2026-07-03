@@ -2,6 +2,7 @@
   "use strict";
 
   const photoInput = document.getElementById("photoInput");
+  const pasteBtn = document.getElementById("pasteBtn");
   const resetHatBtn = document.getElementById("resetHatBtn");
   const flipHatBtn = document.getElementById("flipHatBtn");
   const downloadBtn = document.getElementById("downloadBtn");
@@ -206,6 +207,46 @@
   photoInput.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     if (file) loadPhoto(file);
+  });
+
+  pasteBtn.addEventListener("click", async () => {
+    if (!navigator.clipboard || !navigator.clipboard.read) {
+      alert("Your browser doesn't support reading images from the clipboard. Try pasting with Ctrl+V / Cmd+V instead, or use Upload Photo.");
+      return;
+    }
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      let imageBlob = null;
+      for (const item of clipboardItems) {
+        const imageType = item.types.find((type) => type.startsWith("image/"));
+        if (imageType) {
+          imageBlob = await item.getType(imageType);
+          break;
+        }
+      }
+      if (!imageBlob) {
+        alert("No image found on the clipboard. Copy an image first, then try again.");
+        return;
+      }
+      loadPhoto(imageBlob);
+    } catch (err) {
+      alert("Couldn't read the clipboard. Your browser may need permission — check for a prompt, or try Ctrl+V / Cmd+V instead.");
+    }
+  });
+
+  window.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          loadPhoto(file);
+        }
+        break;
+      }
+    }
   });
 
   resetHatBtn.addEventListener("click", () => {
