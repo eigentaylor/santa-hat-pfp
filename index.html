@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santa Hat PFP Maker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🎅 Santa Hat PFP Maker</h1>
+      <p class="subtitle">Upload a photo, drag the hat into place, resize &amp; rotate it, then download.</p>
+    </header>
+
+    <div class="toolbar">
+      <label class="btn btn-primary" for="photoInput">
+        Upload Photo
+        <input type="file" id="photoInput" accept="image/*" hidden>
+      </label>
+      <button class="btn" id="resetHatBtn" disabled>Reset Hat</button>
+      <button class="btn" id="flipHatBtn" disabled>Flip Hat</button>
+      <button class="btn btn-primary" id="downloadBtn" disabled>Download</button>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <p class="placeholder" id="placeholder">No photo yet — click "Upload Photo" to get started</p>
+      <div class="canvas-stack" id="canvasStack" hidden>
+        <canvas id="baseCanvas"></canvas>
+        <canvas id="overlayCanvas"></canvas>
+      </div>
+    </div>
+
+    <p class="hint">Drag the hat to move it. Drag a corner to resize. Drag the top handle to rotate.</p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

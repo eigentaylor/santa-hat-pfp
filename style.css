@@ -1,0 +1,141 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #2a2e38;
+  --text: #f2f3f5;
+  --muted: #9aa1ac;
+  --accent: #c0392b;
+  --accent-hover: #a93226;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 64px;
+}
+
+.app {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+header {
+  text-align: center;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover:not(:disabled) {
+  background: #1f2330;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.canvas-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.placeholder {
+  color: var(--muted);
+  text-align: center;
+  padding: 60px 20px;
+  margin: 0;
+}
+
+.canvas-stack {
+  position: relative;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.canvas-stack canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+#baseCanvas {
+  border-radius: 6px;
+}
+
+#overlayCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  touch-action: none;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0;
+}
