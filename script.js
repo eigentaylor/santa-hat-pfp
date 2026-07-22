@@ -7,6 +7,7 @@
   const flipHatBtn = document.getElementById("flipHatBtn");
   const downloadBtn = document.getElementById("downloadBtn");
   const placeholder = document.getElementById("placeholder");
+  const canvasWrap = document.getElementById("canvasWrap");
   const canvasStack = document.getElementById("canvasStack");
   const baseCanvas = document.getElementById("baseCanvas");
   const overlayCanvas = document.getElementById("overlayCanvas");
@@ -14,7 +15,7 @@
   const overlayCtx = overlayCanvas.getContext("2d");
 
   const HANDLE_RADIUS = 14;
-  const ROTATE_HANDLE_OFFSET = 40;
+  const ROTATE_RING_GAP = 18; // extra hit-radius beyond a corner handle that triggers rotate instead of resize
   const MIN_SIZE = 24;
 
   const hatImage = new Image();
@@ -55,12 +56,6 @@
     return { x: h.cx + rotated.x, y: h.cy + rotated.y };
   }
 
-  function getRotateHandlePos(h) {
-    const local = { x: 0, y: -h.h / 2 - ROTATE_HANDLE_OFFSET };
-    const rotated = rotatePoint(local.x, local.y, h.angle);
-    return { x: h.cx + rotated.x, y: h.cy + rotated.y };
-  }
-
   function getAllCorners(h) {
     return {
       tl: getCorner(h, "tl"),
@@ -97,13 +92,13 @@
     if (!hat) return;
 
     const corners = getAllCorners(hat);
-    const rotateHandle = getRotateHandlePos(hat);
 
     // scale visual sizes relative to canvas internal resolution so they
     // stay a sensible on-screen size regardless of photo resolution
     const displayScale = overlayCanvas.width / overlayCanvas.getBoundingClientRect().width || 1;
     const lineWidth = 2 * displayScale;
     const handleR = HANDLE_RADIUS * displayScale;
+    const rotateR = (HANDLE_RADIUS + ROTATE_RING_GAP) * displayScale;
 
     overlayCtx.save();
     overlayCtx.strokeStyle = "#ff5252";
@@ -118,18 +113,22 @@
     overlayCtx.stroke();
     overlayCtx.setLineDash([]);
 
-    // line to rotate handle
-    overlayCtx.beginPath();
-    const topMid = {
-      x: (corners.tl.x + corners.tr.x) / 2,
-      y: (corners.tl.y + corners.tr.y) / 2,
-    };
-    overlayCtx.moveTo(topMid.x, topMid.y);
-    overlayCtx.lineTo(rotateHandle.x, rotateHandle.y);
-    overlayCtx.stroke();
+    // faint rotate-zone ring around each corner, hints the outer drag area rotates
+    overlayCtx.globalAlpha = 0.55;
+    overlayCtx.strokeStyle = "#4caf50";
+    overlayCtx.lineWidth = lineWidth * 0.75;
+    for (const name of ["tl", "tr", "br", "bl"]) {
+      const c = corners[name];
+      overlayCtx.beginPath();
+      overlayCtx.arc(c.x, c.y, rotateR, 0, Math.PI * 2);
+      overlayCtx.stroke();
+    }
+    overlayCtx.globalAlpha = 1;
 
-    // corner handles
+    // corner resize handles
     overlayCtx.fillStyle = "#ffffff";
+    overlayCtx.strokeStyle = "#ff5252";
+    overlayCtx.lineWidth = lineWidth;
     for (const name of ["tl", "tr", "br", "bl"]) {
       const c = corners[name];
       overlayCtx.beginPath();
@@ -137,13 +136,6 @@
       overlayCtx.fill();
       overlayCtx.stroke();
     }
-
-    // rotate handle
-    overlayCtx.beginPath();
-    overlayCtx.fillStyle = "#4caf50";
-    overlayCtx.arc(rotateHandle.x, rotateHandle.y, handleR, 0, Math.PI * 2);
-    overlayCtx.fill();
-    overlayCtx.stroke();
 
     overlayCtx.restore();
   }
@@ -249,6 +241,35 @@
     }
   });
 
+  let dragDepth = 0;
+  ["dragenter", "dragover"].forEach((eventName) => {
+    canvasWrap.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (eventName === "dragenter") dragDepth++;
+      canvasWrap.classList.add("drag-over");
+    });
+  });
+  canvasWrap.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) canvasWrap.classList.remove("drag-over");
+  });
+  canvasWrap.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth = 0;
+    canvasWrap.classList.remove("drag-over");
+    const file = e.dataTransfer && Array.from(e.dataTransfer.files || []).find((f) => f.type.startsWith("image/"));
+    if (file) loadPhoto(file);
+  });
+
+  // prevent the browser from navigating to/opening a dropped file anywhere else on the page
+  ["dragover", "drop"].forEach((eventName) => {
+    window.addEventListener(eventName, (e) => e.preventDefault());
+  });
+
   resetHatBtn.addEventListener("click", () => {
     if (!defaultHat || !photoImage) return;
     hat = { ...defaultHat };
@@ -277,6 +298,7 @@
   let hatStart = null; // snapshot of hat at gesture start
   let resizeAnchor = null; // { x, y } fixed canvas point during resize
   let resizeOppositeName = null;
+  let rotateStartAngle = null; // pointer angle (from hat center) at gesture start
 
   function canvasCoordsFromEvent(evt) {
     const rect = overlayCanvas.getBoundingClientRect();
@@ -293,20 +315,27 @@
     if (!hat) return null;
     const rect = overlayCanvas.getBoundingClientRect();
     const scale = overlayCanvas.width / rect.width || 1;
-    const hitR = (HANDLE_RADIUS + 10) * scale;
-
-    const rotateHandle = getRotateHandlePos(hat);
-    if (Math.hypot(px - rotateHandle.x, py - rotateHandle.y) <= hitR) {
-      return { type: "rotate" };
-    }
+    const resizeR = (HANDLE_RADIUS + 10) * scale;
+    const rotateR = (HANDLE_RADIUS + ROTATE_RING_GAP) * scale;
 
     const corners = getAllCorners(hat);
+
+    // resize takes priority when the pointer is close to the exact corner
     for (const name of ["tl", "tr", "br", "bl"]) {
       const c = corners[name];
-      if (Math.hypot(px - c.x, py - c.y) <= hitR) {
+      if (Math.hypot(px - c.x, py - c.y) <= resizeR) {
         return { type: "resize", corner: name };
       }
     }
+
+    // slightly further out from any corner rotates instead
+    for (const name of ["tl", "tr", "br", "bl"]) {
+      const c = corners[name];
+      if (Math.hypot(px - c.x, py - c.y) <= rotateR) {
+        return { type: "rotate", corner: name };
+      }
+    }
+
     return null;
   }
 
@@ -321,6 +350,7 @@
 
     if (handleHit && handleHit.type === "rotate") {
       dragMode = "rotate";
+      rotateStartAngle = Math.atan2(y - hat.cy, x - hat.cx);
     } else if (handleHit && handleHit.type === "resize") {
       dragMode = "resize";
       dragHandle = handleHit.corner;
@@ -349,7 +379,8 @@
       hat.cx = hatStart.cx + (x - dragStart.x);
       hat.cy = hatStart.cy + (y - dragStart.y);
     } else if (dragMode === "rotate") {
-      hat.angle = Math.atan2(y - hat.cy, x - hat.cx) + Math.PI / 2;
+      const currentAngle = Math.atan2(y - hatStart.cy, x - hatStart.cx);
+      hat.angle = hatStart.angle + (currentAngle - rotateStartAngle);
     } else if (dragMode === "resize") {
       const dx = x - resizeAnchor.x;
       const dy = y - resizeAnchor.y;
@@ -358,9 +389,19 @@
       const rawW = local.x * sign.x;
       const rawH = local.y * sign.y;
 
-      const scale = (rawW / hatStart.w + rawH / hatStart.h) / 2;
-      let newW = Math.max(MIN_SIZE, hatStart.w * scale);
-      let newH = Math.max(MIN_SIZE, hatStart.h * scale);
+      let newW, newH;
+      if (evt.shiftKey) {
+        // constrain proportions while resizing
+        const scale = (rawW / hatStart.w + rawH / hatStart.h) / 2;
+        newW = hatStart.w * scale;
+        newH = hatStart.h * scale;
+      } else {
+        // free resize: width and height change independently
+        newW = rawW;
+        newH = rawH;
+      }
+      newW = Math.max(MIN_SIZE, newW);
+      newH = Math.max(MIN_SIZE, newH);
 
       const oppositeMult = CORNER_MULT[resizeOppositeName];
       const localOpp = { x: (oppositeMult.x * newW) / 2, y: (oppositeMult.y * newH) / 2 };
@@ -386,6 +427,21 @@
 
   overlayCanvas.addEventListener("mousedown", pointerDown);
   overlayCanvas.addEventListener("touchstart", pointerDown, { passive: false });
+
+  overlayCanvas.addEventListener("mousemove", (evt) => {
+    if (dragMode || !hat) return;
+    const { x, y } = canvasCoordsFromEvent(evt);
+    const hit = hitTestHandle(x, y);
+    if (hit && hit.type === "rotate") {
+      overlayCanvas.style.cursor = "grab";
+    } else if (hit && hit.type === "resize") {
+      overlayCanvas.style.cursor = hit.corner === "tl" || hit.corner === "br" ? "nwse-resize" : "nesw-resize";
+    } else if (pointInHat(x, y, hat)) {
+      overlayCanvas.style.cursor = "move";
+    } else {
+      overlayCanvas.style.cursor = "default";
+    }
+  });
 
   window.addEventListener("resize", () => {
     if (hat) render();

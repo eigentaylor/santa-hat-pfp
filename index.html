@@ -13,8 +13,8 @@
   <div class="app">
     <header>
       <h1>🎅 santa hat pfp maker</h1>
-      <p class="subtitle">Upload a photo (or paste one from your clipboard), drag the hat into place, resize &amp;
-        rotate it, then download.</p>
+      <p class="subtitle">Upload a photo, drag &amp; drop one onto the page, or paste one from your clipboard, then
+        drag the hat into place, resize &amp; rotate it, then download.</p>
     </header>
 
     <div class="toolbar">
@@ -29,14 +29,16 @@
     </div>
 
     <div class="canvas-wrap" id="canvasWrap">
-      <p class="placeholder" id="placeholder">No photo yet — click "Upload Photo" to get started</p>
+      <p class="placeholder" id="placeholder">No photo yet — click "Upload Photo" or drag &amp; drop an image here to
+        get started</p>
       <div class="canvas-stack" id="canvasStack" hidden>
         <canvas id="baseCanvas"></canvas>
         <canvas id="overlayCanvas"></canvas>
       </div>
     </div>
 
-    <p class="hint">Drag the hat to move it. Drag a corner to resize. Drag the top handle to rotate.</p>
+    <p class="hint">Drag the hat to move it. Drag a corner to resize (hold Shift to keep its proportions). Drag just
+      outside a corner to rotate.</p>
   </div>
 
   <script src="script.js"></script>
